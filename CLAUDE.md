@@ -134,10 +134,10 @@ src/          분석 (모두 `python src/<파일>.py` 로 실행, 결과는 resu
               - liquidity_metrics.py  미시구조 지표 공식 모음 (새 지표는 여기에 추가)
               - plot_style.py         공통 차트 스타일
 deploy/       install_collector.sh [vps|local] — systemd 서비스 + watchdog 타이머 설치
-docs/         progress.md (월별 경과), deployment.md (배포 절차)
+docs/         research_summary.md (결과 요약), file_index.md (파일 명단), progress.md (월별 경과), deployment.md (배포 절차)
 data/raw/     연도별 Parquet (git 추적)
 data/orderbook/  실시간 호가창 (git 제외, rsync로 동기화)
-results/<주제>/  summary.md + tables/*.csv + figures/*.png  (주제: descriptive, eda_binance, liquidity, orderbook)
+results/<주제>/  summary.md + tables/*.csv + figures/*.png  (주제: descriptive, eda_binance, liquidity, orderbook, baseline_factors, horizons)
 ```
 
 - 새 작업 결과는 `docs/progress.md`에 날짜와 함께 기록 (장학금 중간/결과 보고서 근거)

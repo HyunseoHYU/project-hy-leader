@@ -179,6 +179,8 @@ def write_summary(evaluation: pd.DataFrame, yearly_price: pd.DataFrame, coeffici
 - 검증: 워크포워드 — {TEST_YEARS[0]}~{TEST_YEARS[-1]}년 각 해를 그 이전 데이터로만 학습한 모형으로 예측
 - 모형: M0 단순 기준(유동성 = 직전 값, 수익률 = 0) / M1 자기 과거값(HAR)+시간 패턴 / M2 전체 팩터 선형 / M3 전체 팩터 부스팅
 - 재현: `python src/analyze_baseline_factors.py` / 정의: `src/baseline_factors.py`
+- 설계 메모: 유동성 모형은 모두 '최근 1주 평균 대비 편차'를 학습(수준 추세 대응), 선형 모형의 팩터는 학습 구간 0.5~99.5% 분위수로 자름(극단값 방어),
+  가격 모형에는 추세 없는(정상) 팩터만 사용 — 각각의 이유는 `src/baseline_factors.py` 주석 참고
 
 ## 1. 유동성·변동성 예측 — 잘 된다 (기대 유동성으로 사용 가능)
 
@@ -299,7 +301,8 @@ def main() -> None:
     full_sample = table.loc[TRAIN_START:]
     coefficients = {}
     for target in TARGETS:
-        coefficients[target] = bf.ols_newey_west(full_sample[factor_groups["all"]], full_sample[f"target_{target}"])
+        factor_columns = bf.baseline_factor_columns(target, factor_groups)  # 수익률은 추세 없는 가격용 팩터
+        coefficients[target] = bf.ols_newey_west(full_sample[factor_columns], full_sample[f"target_{target}"])
 
     print("4) 저장")
     evaluation.to_csv(TABLES_DIR / "oos_evaluation.csv", float_format="%.6g")

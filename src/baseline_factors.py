@@ -36,66 +36,83 @@ MIN_MINUTES_PER_HOUR = 50  # 60분 중 이보다 적게 남은 시간(거래소 
 
 
 # ===========================================================================
-# 1. 1분봉 → 1시간 패널
+# 1. 1분봉 → N분 봉 패널 (5분 · 15분 · 1시간 · 4시간 · 1일 …)
 # ===========================================================================
-def build_hourly_panel(minute_bars: pd.DataFrame) -> pd.DataFrame:
-    """
-    1분봉(liquidity_metrics.prepare_minute_bars 결과)을 1시간 단위로 모은다.
+MINUTES_PER_DAY = 1440
+MINUTES_PER_WEEK = 7 * MINUTES_PER_DAY
 
-    만드는 변수 (모두 '그 1시간 동안'의 값)
-        return_bps        시간 수익률 = ln(종가_t / 종가_{t−1}) × 10⁴
+# 봉 하나에 필요한 최소 1분봉 비율 (60분 중 50분 = 83%). 이보다 적으면 거래소 점검 등으로 보고 결측 처리
+MIN_COVERAGE_RATIO = MIN_MINUTES_PER_HOUR / 60
+
+
+def build_bar_panel(minute_bars: pd.DataFrame, bar_minutes: int = 60) -> pd.DataFrame:
+    """
+    1분봉(liquidity_metrics.prepare_minute_bars 결과)을 bar_minutes 분 단위 봉으로 모은다.
+
+    만드는 변수 (모두 '그 봉 동안'의 값)
+        return_bps        봉 수익률 = ln(종가_t / 종가_{t−1}) × 10⁴
         rv_bps            실현변동성 = √Σ(1분 수익률²)                    (bp)
         range_bps         고가·저가 범위 = ln(고가/저가) × 10⁴             (Parkinson 변동성 재료)
         usd_volume_musd   거래대금 (백만 달러)
         order_imbalance   주문 불균형 = (매수 주도량 − 매도 주도량) / 거래량   (−1 ~ +1)
         avg_trade_btc     평균 체결 크기 = 거래량 / 체결 수                  (BTC)
         amihud            Amihud 비유동성 = Σ|1분 수익률| / 거래대금         (bp per $1M)
-                          ※ |시간 수익률| 대신 1분 수익률 절댓값의 합(가격 경로 길이)을 써서 잡음을 줄임
+                          ※ |봉 수익률| 대신 1분 수익률 절댓값의 합(가격 경로 길이)을 써서 잡음을 줄임
         kyle_lambda       Kyle's λ = 1분 수익률(bp)을 순매수량(BTC)에 회귀한 기울기 × 100  (bp per 100 BTC)
+                          ※ 봉 안의 1분봉 개수(5분봉이면 5개)로 추정하므로 짧은 봉일수록 잡음이 크다
+        open, volume      기술지표 계산용 (시가, BTC 거래량)
     """
+    bar_frequency = f"{bar_minutes}min"
     bars = minute_bars.copy()
-    bars["hour"] = bars.index.floor("h")
+    bars["bar_start"] = bars.index.floor(bar_frequency)
     bars["abs_return_bps"] = bars["return_bps"].abs()
     bars["squared_return_bps"] = bars["return_bps"] ** 2
 
-    by_hour = bars.groupby("hour")
-    hourly = pd.DataFrame(
+    by_bar = bars.groupby("bar_start")
+    panel = pd.DataFrame(
         {
-            "close": by_hour["close"].last(),
-            "high": by_hour["high"].max(),
-            "low": by_hour["low"].min(),
-            "btc_volume": by_hour["volume"].sum(),
-            "buy_volume": by_hour["buy_volume"].sum(),
-            "usd_volume_musd": by_hour["usd_volume"].sum() / 1e6,
-            "num_trades": by_hour["num_trades"].sum(),
-            "path_length_bps": by_hour["abs_return_bps"].sum(),
-            "realized_variance_bps2": by_hour["squared_return_bps"].sum(),
-            "minutes_available": by_hour.size(),
+            "open": by_bar["open"].first(),
+            "close": by_bar["close"].last(),
+            "high": by_bar["high"].max(),
+            "low": by_bar["low"].min(),
+            "btc_volume": by_bar["volume"].sum(),
+            "buy_volume": by_bar["buy_volume"].sum(),
+            "usd_volume_musd": by_bar["usd_volume"].sum() / 1e6,
+            "num_trades": by_bar["num_trades"].sum(),
+            "path_length_bps": by_bar["abs_return_bps"].sum(),
+            "realized_variance_bps2": by_bar["squared_return_bps"].sum(),
+            "minutes_available": by_bar.size(),
         }
     )
 
-    # --- 빈 시간도 행을 만들어 시간 간격을 일정하게 (shift/rolling 이 '1시간 전'을 정확히 가리키도록) ---
-    full_hour_grid = pd.date_range(hourly.index.min(), hourly.index.max(), freq="h")
-    hourly = hourly.reindex(full_hour_grid)
-    hourly.index.name = "hour"
+    # --- 빈 봉도 행을 만들어 간격을 일정하게 (shift/rolling 이 '한 봉 전'을 정확히 가리키도록) ---
+    full_grid = pd.date_range(panel.index.min(), panel.index.max(), freq=bar_frequency)
+    panel = panel.reindex(full_grid)
+    panel.index.name = "bar_start"
 
     # --- 파생 변수 ---
-    hourly["return_bps"] = np.log(hourly["close"]).diff() * BPS
-    hourly["rv_bps"] = np.sqrt(hourly["realized_variance_bps2"])
-    hourly["range_bps"] = np.log(hourly["high"] / hourly["low"]) * BPS
-    sell_volume = hourly["btc_volume"] - hourly["buy_volume"]
-    hourly["order_imbalance"] = (hourly["buy_volume"] - sell_volume) / hourly["btc_volume"]
-    hourly["avg_trade_btc"] = hourly["btc_volume"] / hourly["num_trades"]
-    hourly["amihud"] = hourly["path_length_bps"] / hourly["usd_volume_musd"]
+    panel["return_bps"] = np.log(panel["close"]).diff() * BPS
+    panel["rv_bps"] = np.sqrt(panel["realized_variance_bps2"])
+    panel["range_bps"] = np.log(panel["high"] / panel["low"]) * BPS
+    sell_volume = panel["btc_volume"] - panel["buy_volume"]
+    panel["order_imbalance"] = (panel["buy_volume"] - sell_volume) / panel["btc_volume"]
+    panel["avg_trade_btc"] = panel["btc_volume"] / panel["num_trades"]
+    panel["amihud"] = panel["path_length_bps"] / panel["usd_volume_musd"]
 
-    kyle = lm.regression_slope_by_group(minute_bars["signed_volume"], minute_bars["return_bps"],
-                                        minute_bars.index.floor("h").to_series(index=minute_bars.index))
-    hourly["kyle_lambda"] = kyle["slope"] * 100
+    bar_of_each_minute = minute_bars.index.floor(bar_frequency).to_series(index=minute_bars.index)
+    kyle = lm.regression_slope_by_group(minute_bars["signed_volume"], minute_bars["return_bps"], bar_of_each_minute)
+    panel["kyle_lambda"] = kyle["slope"] * 100
 
-    # --- 데이터가 많이 빈 시간은 전부 결측으로 ---
-    is_incomplete_hour = hourly["minutes_available"].fillna(0) < MIN_MINUTES_PER_HOUR
-    hourly.loc[is_incomplete_hour, hourly.columns.difference(["minutes_available"])] = np.nan
-    return hourly
+    # --- 데이터가 많이 빈 봉은 전부 결측으로 ---
+    minimum_minutes = round(bar_minutes * MIN_COVERAGE_RATIO)
+    is_incomplete_bar = panel["minutes_available"].fillna(0) < minimum_minutes
+    panel.loc[is_incomplete_bar, panel.columns.difference(["minutes_available"])] = np.nan
+    return panel
+
+
+def build_hourly_panel(minute_bars: pd.DataFrame) -> pd.DataFrame:
+    """1시간 봉 패널 (기존 베이스라인 분석용 바로가기)."""
+    return build_bar_panel(minute_bars, bar_minutes=60)
 
 
 # ===========================================================================
@@ -115,83 +132,131 @@ def winsorize(series: pd.Series, lower: float = 0.01, upper: float = 0.99) -> pd
     return series.clip(series.quantile(lower), series.quantile(upper))
 
 
-def har_components(series: pd.Series, prefix: str) -> pd.DataFrame:
+def har_windows(bar_minutes: int) -> dict[str, tuple[int, int]]:
+    """
+    HAR 구성요소의 창 길이 (봉 개수, 최소 유효 봉 개수).
+        day  = 하루에 해당하는 봉 수,   단 최소 5봉   (1일 봉이면 5일)
+        week = 1주에 해당하는 봉 수,    단 최소 30봉  (1일 봉이면 30일)
+    최소 유효 봉 개수는 1시간 봉 기준값(24봉 중 18, 168봉 중 120)과 같은 비율.
+    """
+    day_bars = max(MINUTES_PER_DAY // bar_minutes, 5)
+    week_bars = max(MINUTES_PER_WEEK // bar_minutes, 30)
+    return {
+        "day": (day_bars, round(day_bars * 18 / 24)),
+        "week": (week_bars, round(week_bars * 120 / 168)),
+    }
+
+
+def har_components(series: pd.Series, prefix: str, bar_minutes: int = 60) -> pd.DataFrame:
     """
     HAR(Heterogeneous AutoRegressive, Corsi 2009) 구성요소: 서로 다른 시간 규모의 과거 평균.
-        _1h   직전 1시간 값          (초단기 참여자)
-        _24h  최근 24시간 평균       (일 단위 참여자)
-        _168h 최근 1주(168시간) 평균 (주 단위 참여자)
+        _last  직전 봉 값           (초단기 참여자)
+        _day   최근 하루 평균       (일 단위 참여자)
+        _week  최근 1주 평균        (주 단위 참여자)
     변동성·유동성은 이 세 가지로 대부분 설명된다는 것이 정형화된 사실.
     """
+    windows = har_windows(bar_minutes)
+    day_bars, day_min = windows["day"]
+    week_bars, week_min = windows["week"]
     return pd.DataFrame(
         {
-            f"{prefix}_1h": series,
-            f"{prefix}_24h": series.rolling(24, min_periods=18).mean(),
-            f"{prefix}_168h": series.rolling(168, min_periods=120).mean(),
+            f"{prefix}_last": series,
+            f"{prefix}_day": series.rolling(day_bars, min_periods=day_min).mean(),
+            f"{prefix}_week": series.rolling(week_bars, min_periods=week_min).mean(),
         }
     )
 
 
-def build_factor_table(hourly: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, list[str]]]:
+def build_factor_table(panel: pd.DataFrame, bar_minutes: int = 60) -> tuple[pd.DataFrame, dict[str, list[str]]]:
     """
-    한 행 = 시각 t.  팩터는 t시간이 끝난 시점까지 알 수 있는 정보만, 대상(target_*)은 t+1시간의 값.
+    한 행 = 봉 t.  팩터는 봉 t가 끝난 시점까지 알 수 있는 정보만, 대상(target_*)은 다음 봉(t+1)의 값.
 
     반환:
         table          팩터 + 대상 컬럼
-        factor_groups  {"own_<대상>": 그 대상의 자기 과거값 팩터, "seasonal": 시간 패턴, "all": 전체 팩터}
+        factor_groups  {"own_<대상>": 그 대상의 자기 과거값 팩터, "seasonal": 시간 패턴,
+                        "all": 전체 베이스라인 팩터, "boosting_extra": 부스팅 전용 추가 컬럼}
     """
-    table = pd.DataFrame(index=hourly.index)
+    table = pd.DataFrame(index=panel.index)
     factor_groups: dict[str, list[str]] = {}
+    windows = har_windows(bar_minutes)
+    day_bars, day_min = windows["day"]
+    week_bars, week_min = windows["week"]
 
     # --- (1) 유동성·변동성 변수의 HAR 구성요소 ---
     transformed = {
-        "log_amihud": np.log(hourly["amihud"].where(hourly["amihud"] > 0)),
-        "log_rv": np.log(hourly["rv_bps"].where(hourly["rv_bps"] > 0)),
-        "kyle_lambda": winsorize(hourly["kyle_lambda"]),
+        "log_amihud": np.log(panel["amihud"].where(panel["amihud"] > 0)),
+        "log_rv": np.log(panel["rv_bps"].where(panel["rv_bps"] > 0)),
+        "kyle_lambda": winsorize(panel["kyle_lambda"]),
     }
     for name, series in transformed.items():
-        har = har_components(series, name)
+        har = har_components(series, name, bar_minutes)
         table = table.join(har)
         factor_groups[f"own_{name}"] = list(har.columns)
 
     # --- (2) 가격 팩터: 반전(reversal)·모멘텀 ---
-    #     과거 수익률 합계. 1시간은 '단기 반전', 1주는 '모멘텀'을 잡는 용도
-    returns = hourly["return_bps"]
-    table["ret_1h"] = returns
-    table["ret_24h"] = returns.rolling(24, min_periods=18).sum()
-    table["ret_168h"] = returns.rolling(168, min_periods=120).sum()
-    factor_groups["own_return"] = ["ret_1h", "ret_24h", "ret_168h"]
+    #     과거 수익률 합계. 직전 봉은 '단기 반전', 1주는 '모멘텀'을 잡는 용도
+    returns = panel["return_bps"]
+    table["ret_last"] = returns
+    table["ret_day"] = returns.rolling(day_bars, min_periods=day_min).sum()
+    table["ret_week"] = returns.rolling(week_bars, min_periods=week_min).sum()
+    factor_groups["own_return"] = ["ret_last", "ret_day", "ret_week"]
 
     # --- (3) 주문흐름 팩터 ---
-    table["oib_1h"] = hourly["order_imbalance"]
-    table["oib_24h"] = hourly["order_imbalance"].rolling(24, min_periods=18).mean()
+    table["oib_last"] = panel["order_imbalance"]
+    table["oib_day"] = panel["order_imbalance"].rolling(day_bars, min_periods=day_min).mean()
 
     # --- (4) 거래 활동 팩터 ---
-    log_volume = np.log(hourly["usd_volume_musd"].where(hourly["usd_volume_musd"] > 0))
-    # 비정상 거래량 = 이번 시간 로그 거래대금 − 최근 1주 평균  (평소보다 몇 배 많은가)
-    table["abnormal_volume"] = log_volume - log_volume.rolling(168, min_periods=120).mean()
-    table["log_avg_trade_btc"] = np.log(hourly["avg_trade_btc"].where(hourly["avg_trade_btc"] > 0))
-    table["log_range"] = np.log(hourly["range_bps"].where(hourly["range_bps"] > 0))
+    #     수준 대신 '최근 1주 평균 대비 편차'로 만든다. 거래대금·평균 체결 크기는 해마다 크게 변해서
+    #     (예: log 평균 체결 크기 2018년 −1.9 → 2026년 −5.3) 수준을 그대로 쓰면 학습 범위 밖 값이 들어온다.
+    def deviation_from_week_mean(series):
+        return series - series.rolling(week_bars, min_periods=week_min).mean()
 
-    # --- (5) 시간 패턴: '예측하려는 시간(t+1)'의 시각·요일 — 미리 알 수 있는 정보라 사용 가능 ---
-    next_hour = table.index + pd.Timedelta(hours=1)
-    hour_angle = 2 * np.pi * next_hour.hour / 24
-    table["hour_sin"] = np.sin(hour_angle)  # 하루 주기를 원 위의 좌표로 표현 (23시와 0시가 가깝게)
-    table["hour_cos"] = np.cos(hour_angle)
-    table["hour_sin2"] = np.sin(2 * hour_angle)  # 반나절 주기 (아시아·미국 세션 두 봉우리)
-    table["hour_cos2"] = np.cos(2 * hour_angle)
-    table["is_weekend"] = (next_hour.dayofweek >= 5).astype(float)
-    table["hour_of_day"] = next_hour.hour.astype(float)  # 부스팅 모형 전용 (선형 모형에는 sin/cos 사용)
-    factor_groups["seasonal"] = ["hour_sin", "hour_cos", "hour_sin2", "hour_cos2", "is_weekend"]
+    log_volume = np.log(panel["usd_volume_musd"].where(panel["usd_volume_musd"] > 0))
+    log_trade_size = np.log(panel["avg_trade_btc"].where(panel["avg_trade_btc"] > 0))
+    log_range = np.log(panel["range_bps"].where(panel["range_bps"] > 0))
+    table["abnormal_volume"] = deviation_from_week_mean(log_volume)  # 평소보다 거래대금이 몇 배인가 (로그)
+    table["abnormal_trade_size"] = deviation_from_week_mean(log_trade_size)  # 평소보다 큰 주문이 들어오는가
+    table["log_range"] = log_range
+    table["abnormal_range"] = deviation_from_week_mean(log_range)
 
-    # --- 전체 팩터 목록 (선형 모형용; hour_of_day 는 부스팅에만 추가) ---
+    # 유동성·변동성의 '편차' 버전 (가격 예측용, 아래 설명)
+    for name in transformed:
+        table[f"{name}_deviation"] = table[f"{name}_last"] - table[f"{name}_week"]
+
+    # --- (5) 시간 패턴: '예측하려는 봉(t+1)'의 시각·요일 — 미리 알 수 있는 정보라 사용 가능 ---
+    next_bar_start = table.index + pd.Timedelta(minutes=bar_minutes)
+    table["is_weekend"] = (next_bar_start.dayofweek >= 5).astype(float)
+    if bar_minutes < MINUTES_PER_DAY:
+        hour_angle = 2 * np.pi * next_bar_start.hour / 24
+        table["hour_sin"] = np.sin(hour_angle)  # 하루 주기를 원 위의 좌표로 표현 (23시와 0시가 가깝게)
+        table["hour_cos"] = np.cos(hour_angle)
+        table["hour_sin2"] = np.sin(2 * hour_angle)  # 반나절 주기 (아시아·미국 세션 두 봉우리)
+        table["hour_cos2"] = np.cos(2 * hour_angle)
+        table["hour_of_day"] = next_bar_start.hour.astype(float)  # 부스팅 모형 전용 (선형 모형에는 sin/cos)
+        factor_groups["seasonal"] = ["hour_sin", "hour_cos", "hour_sin2", "hour_cos2", "is_weekend"]
+        factor_groups["boosting_extra"] = ["hour_of_day"]
+    else:
+        # 1일 봉은 '시각'이 항상 0시라 의미 없음 → 요일(주말) 효과만
+        factor_groups["seasonal"] = ["is_weekend"]
+        factor_groups["boosting_extra"] = []
+
+    # --- 전체 팩터 목록 (선형 모형용) ---
     all_factors = []
-    for group_name, columns in factor_groups.items():
-        all_factors += columns
-    all_factors += ["oib_1h", "oib_24h", "abnormal_volume", "log_avg_trade_btc", "log_range"]
+    for group_name in ["own_log_amihud", "own_log_rv", "own_kyle_lambda", "own_return", "seasonal"]:
+        all_factors += factor_groups[group_name]
+    all_factors += ["oib_last", "oib_day", "abnormal_volume", "abnormal_trade_size", "log_range"]
     factor_groups["all"] = list(dict.fromkeys(all_factors))  # 중복 제거, 순서 유지
 
-    # --- (6) 예측 대상: 한 시간 뒤의 값 (shift(-1)) ---
+    # --- 가격 예측용 팩터: 추세 없는(정상, stationary) 변수만 ---
+    #     유동성 수준(예: log Amihud)은 해마다 낮아지는 추세가 있어, 수익률 회귀에 넣으면 학습 기간의 우연한
+    #     관계가 테스트 기간의 '범위 밖' 값과 만나 폭발한다 (1일 봉에서 2022년 일 수익률 +1,700bp 예측이 실제 발생).
+    #     → 수익률 예측에는 수준 대신 '1주 평균 대비 편차'만 쓴다.
+    price_factors = factor_groups["own_return"] + factor_groups["seasonal"]
+    price_factors += [f"{name}_deviation" for name in transformed]
+    price_factors += ["oib_last", "oib_day", "abnormal_volume", "abnormal_trade_size", "abnormal_range"]
+    factor_groups["price"] = price_factors
+
+    # --- (6) 예측 대상: 다음 봉의 값 (shift(-1)) ---
     for name in LIQUIDITY_TARGETS:
         table[f"target_{name}"] = transformed[name].shift(-1)
     table["target_return_bps"] = returns.shift(-1)
@@ -225,28 +290,55 @@ class ZeroModel:
         return np.zeros(len(features))
 
 
+# 학습 구간 분위수 밖의 팩터 값을 잘라내는 경계 (0.5% / 99.5%)
+FEATURE_CLIP_QUANTILES = (0.005, 0.995)
+
+
 class StandardizedOLS:
     """
-    선형회귀 (M1, M2).
+    선형회귀 (M1, M2 …).
     학습 구간의 평균·표준편차로 팩터를 표준화한 뒤 최소제곱 추정 → 계수 크기를 서로 비교할 수 있다.
-    예측할 때도 '학습 구간'의 평균·표준편차를 써야 미래 정보가 섞이지 않는다.
+    예측할 때도 '학습 구간'의 통계만 써야 미래 정보가 섞이지 않는다.
+
+    극단값 방어 (실제로 겪은 문제)
+        1일 봉처럼 학습 표본이 작을 때, 테스트 기간에 학습 범위를 크게 벗어난 팩터 값이 들어오면
+        선형 예측이 폭발했다 (R² −300% 이상). → 팩터를 학습 구간의 0.5%·99.5% 분위수로 잘라서 사용.
+
+    anchor_column (선택)
+        주어지면 '대상 − anchor'를 학습하고 예측 때 anchor를 더한다 (BoostingModel과 같은 방식).
     """
 
-    def __init__(self, columns: list[str]):
+    def __init__(self, columns: list[str], anchor_column: str | None = None):
         self.columns = columns
+        self.anchor_column = anchor_column
+
+    def _anchor(self, features: pd.DataFrame) -> np.ndarray:
+        if self.anchor_column is None:
+            return np.zeros(len(features))
+        return features[self.anchor_column].to_numpy()
+
+    def _standardize(self, features: pd.DataFrame) -> np.ndarray:
+        clipped = features[self.columns].clip(self.lower_bound_, self.upper_bound_, axis=1)
+        return ((clipped - self.mean_) / self.std_).to_numpy()
 
     def fit(self, features: pd.DataFrame, target: pd.Series):
         x = features[self.columns]
-        self.mean_ = x.mean()
-        self.std_ = x.std().replace(0, 1)  # 상수 컬럼(예: 학습 구간에 주말이 없는 경우) 방어
-        design = np.column_stack([np.ones(len(x)), ((x - self.mean_) / self.std_).to_numpy()])
-        self.coef_, *_ = np.linalg.lstsq(design, target.to_numpy(), rcond=None)
+        lower_quantile, upper_quantile = FEATURE_CLIP_QUANTILES
+        self.lower_bound_ = x.quantile(lower_quantile)
+        self.upper_bound_ = x.quantile(upper_quantile)
+
+        clipped = x.clip(self.lower_bound_, self.upper_bound_, axis=1)
+        self.mean_ = clipped.mean()
+        self.std_ = clipped.std().replace(0, 1)  # 상수 컬럼(예: 학습 구간에 주말이 없는 경우) 방어
+
+        design = np.column_stack([np.ones(len(x)), self._standardize(features)])
+        target_after_anchor = target.to_numpy() - self._anchor(features)
+        self.coef_, *_ = np.linalg.lstsq(design, target_after_anchor, rcond=None)
         return self
 
     def predict(self, features: pd.DataFrame) -> np.ndarray:
-        x = (features[self.columns] - self.mean_) / self.std_
-        design = np.column_stack([np.ones(len(x)), x.to_numpy()])
-        return design @ self.coef_
+        design = np.column_stack([np.ones(len(features)), self._standardize(features)])
+        return design @ self.coef_ + self._anchor(features)
 
 
 class BoostingModel:
@@ -292,42 +384,83 @@ class BoostingModel:
         return self.model_.predict(features[self.columns]) + self._anchor(features)
 
 
-def make_models(target_name: str, factor_groups: dict[str, list[str]]) -> dict:
-    """대상별 모형 4종 (M0~M3)을 만든다."""
-    boosting_columns = factor_groups["all"] + ["hour_of_day"]
-
+def benchmark_model(target_name: str):
+    """M0: 유동성은 '다음 봉 = 이번 봉', 수익률은 '0'."""
     if target_name == "return_bps":
-        own_factors = factor_groups["own_return"]
-        benchmark = ZeroModel()
-        boosting_anchor = None  # 수익률은 이미 0 근처에서 안정적
-    else:
-        own_factors = factor_groups[f"own_{target_name}"]
-        benchmark = PersistenceModel(f"{target_name}_1h")
-        boosting_anchor = f"{target_name}_168h"  # 최근 1주 평균 대비 편차를 학습
+        return ZeroModel()
+    return PersistenceModel(f"{target_name}_last")
 
+
+def boosting_anchor_column(target_name: str) -> str | None:
+    """모형이 '최근 1주 평균 대비 편차'를 학습하도록 기준이 될 컬럼 (수익률은 이미 0 근처라 불필요)."""
+    if target_name == "return_bps":
+        return None
+    return f"{target_name}_week"
+
+
+def own_factor_columns(target_name: str, factor_groups: dict[str, list[str]]) -> list[str]:
+    """대상 자신의 과거값 팩터 (HAR 구성요소 또는 과거 수익률)."""
+    if target_name == "return_bps":
+        return factor_groups["own_return"]
+    return factor_groups[f"own_{target_name}"]
+
+
+def baseline_factor_columns(target_name: str, factor_groups: dict[str, list[str]]) -> list[str]:
+    """베이스라인 전체 팩터: 수익률 대상은 추세 없는 '가격용' 팩터, 유동성 대상은 HAR 수준 포함 전체."""
+    if target_name == "return_bps":
+        return factor_groups["price"]
+    return factor_groups["all"]
+
+
+def make_models(target_name: str, factor_groups: dict[str, list[str]]) -> dict:
+    """베이스라인 모형 4종 (M0~M3)."""
+    own_factors = own_factor_columns(target_name, factor_groups)
+    baseline_columns = baseline_factor_columns(target_name, factor_groups)
+    boosting_columns = baseline_columns + factor_groups["boosting_extra"]
+
+    # 유동성 대상은 선형·부스팅 모두 '최근 1주 평균 대비 편차'를 학습 (anchor).
+    # 수준을 직접 맞히게 하면, 팩터를 학습 범위로 자르는(clip) 극단값 방어와 충돌한다:
+    # Amihud 수준이 학습 기간 최저보다 더 낮아지면 예측이 그 바닥에 붙어 버림 (실제로 R² +28% → −17%).
+    anchor = boosting_anchor_column(target_name)
     return {
-        "M0_benchmark": benchmark,
-        "M1_own_HAR": StandardizedOLS(own_factors + factor_groups["seasonal"]),
-        "M2_all_linear": StandardizedOLS(factor_groups["all"]),
-        "M3_all_boosting": BoostingModel(boosting_columns, anchor_column=boosting_anchor),
+        "M0_benchmark": benchmark_model(target_name),
+        "M1_own_HAR": StandardizedOLS(own_factors + factor_groups["seasonal"], anchor_column=anchor),
+        "M2_all_linear": StandardizedOLS(baseline_columns, anchor_column=anchor),
+        "M3_all_boosting": BoostingModel(boosting_columns, anchor_column=anchor),
     }
+
+
+def columns_used_by(models: dict) -> list[str]:
+    """모형들이 쓰는 컬럼 전체 (워크포워드에서 결측 제거 기준 — 모든 모형이 같은 표본으로 비교되도록)."""
+    columns = []
+    for model in models.values():
+        columns += getattr(model, "columns", [])
+        for attribute in ("column", "anchor_column"):
+            value = getattr(model, attribute, None)
+            if value:
+                columns.append(value)
+    return list(dict.fromkeys(columns))
 
 
 # ===========================================================================
 # 4. 워크포워드(walk-forward) 예측
 # ===========================================================================
 def walk_forward_forecast(table: pd.DataFrame, target_name: str, factor_groups: dict[str, list[str]],
-                          train_start: str, test_years: list[int]) -> pd.DataFrame:
+                          train_start: str, test_years: list[int], model_factory=None) -> pd.DataFrame:
     """
     시간 순서를 지키는 표본 외 예측.
         테스트 연도 Y 마다:  학습 = [train_start, Y년 1월 1일)   →   예측 = Y년 전체
     즉 어떤 예측도 그 시점 이후의 데이터로 학습되지 않는다 (KOSPI 프로젝트의 시점 고정 원칙과 동일).
 
+    model_factory: (target_name, factor_groups) → {모형이름: 모형}.  기본값은 베이스라인 make_models.
     반환: 행 = 시각, 컬럼 = actual + 모형별 예측값
     """
+    if model_factory is None:
+        model_factory = make_models
+
     target_column = f"target_{target_name}"
-    needed_columns = list(dict.fromkeys(factor_groups["all"] + ["hour_of_day", target_column]))
-    usable = table[needed_columns].dropna()
+    needed_columns = columns_used_by(model_factory(target_name, factor_groups)) + [target_column]
+    usable = table[list(dict.fromkeys(needed_columns))].dropna()
     usable = usable[usable.index >= train_start]
 
     yearly_forecasts = []
@@ -340,7 +473,7 @@ def walk_forward_forecast(table: pd.DataFrame, target_name: str, factor_groups: 
             continue
 
         forecasts = pd.DataFrame({"actual": test[target_column]}, index=test.index)
-        for model_name, model in make_models(target_name, factor_groups).items():
+        for model_name, model in model_factory(target_name, factor_groups).items():
             model.fit(train, train[target_column])
             forecasts[model_name] = model.predict(test)
         yearly_forecasts.append(forecasts)
@@ -441,12 +574,13 @@ def direction_hit_rate(actual: np.ndarray, forecast: np.ndarray) -> dict:
     }
 
 
-def sign_strategy_performance(actual_bps: np.ndarray, forecast_bps: np.ndarray, cost_bps_per_trade: float) -> dict:
+def sign_strategy_performance(actual_bps: np.ndarray, forecast_bps: np.ndarray, cost_bps_per_trade: float,
+                              bars_per_year: float = HOURS_PER_YEAR) -> dict:
     """
     '예측 부호대로 1단위 롱/숏' 전략의 성과 — 통계적 예측력이 경제적으로 의미 있는지 확인.
         포지션_t = sign(예측_t)  (+1 매수, −1 매도)
         수수료  = |포지션 변화| × 편도 수수료     (롱→숏 전환은 2단위 거래)
-    연율화: 1년 = 8,760시간.
+    연율화: 샤프 × √(1년 봉 개수)   (1시간 봉 = 8,760)
     """
     position = np.sign(forecast_bps)
     gross_return = position * actual_bps
@@ -454,25 +588,39 @@ def sign_strategy_performance(actual_bps: np.ndarray, forecast_bps: np.ndarray, 
     net_return = gross_return - turnover * cost_bps_per_trade
 
     def annualized_sharpe(returns):
-        return returns.mean() / returns.std() * np.sqrt(HOURS_PER_YEAR) if returns.std() > 0 else np.nan
+        return returns.mean() / returns.std() * np.sqrt(bars_per_year) if returns.std() > 0 else np.nan
+
+    bars_per_day = bars_per_year / 365
 
     return {
         "gross_mean_bps_per_hour": gross_return.mean(),
         "net_mean_bps_per_hour": net_return.mean(),
         "gross_sharpe": annualized_sharpe(gross_return),
         "net_sharpe": annualized_sharpe(net_return),
-        "trades_per_day": turnover.sum() / len(turnover) * 24,
+        "trades_per_day": turnover.sum() / len(turnover) * bars_per_day,
     }
 
 
-def evaluate_forecasts(forecasts: pd.DataFrame, target_name: str, cost_bps_per_trade: float) -> pd.DataFrame:
+def newey_west_lags(bars_per_year: float) -> int:
+    """
+    Newey–West 시차 수 = 하루치 봉 개수 (오차의 자기상관이 대략 하루 안에 사라진다고 보고),
+    단 5 ~ 48 사이로 제한 (1일 봉은 5일, 5분 봉도 계산량을 위해 48개까지).
+    """
+    bars_per_day = round(bars_per_year / 365)
+    return int(min(max(bars_per_day, 5), 48))
+
+
+def evaluate_forecasts(forecasts: pd.DataFrame, target_name: str, cost_bps_per_trade: float,
+                       bars_per_year: float = HOURS_PER_YEAR) -> pd.DataFrame:
     """모형별 표본 외 성과표. 기준(M0) 대비로 비교한다."""
+    lags = newey_west_lags(bars_per_year)
     actual = forecasts["actual"].to_numpy()
     benchmark = forecasts["M0_benchmark"].to_numpy()
     is_price_target = target_name == "return_bps"
 
     rows = []
-    for model_name in [column for column in forecasts.columns if column.startswith("M")]:
+    model_names = [column for column in forecasts.columns if column != "actual"]
+    for model_name in model_names:
         forecast = forecasts[model_name].to_numpy()
         row = {
             "model": model_name,
@@ -482,13 +630,13 @@ def evaluate_forecasts(forecasts: pd.DataFrame, target_name: str, cost_bps_per_t
         }
         if model_name != "M0_benchmark":
             if is_price_target:
-                row["clark_west_stat"], row["clark_west_p"] = clark_west(actual, forecast, benchmark)
+                row["clark_west_stat"], row["clark_west_p"] = clark_west(actual, forecast, benchmark, lags)
             else:
-                row["dm_stat"], row["dm_p"] = diebold_mariano(actual, forecast, benchmark)
+                row["dm_stat"], row["dm_p"] = diebold_mariano(actual, forecast, benchmark, lags)
 
         if is_price_target and model_name != "M0_benchmark":
             row.update(direction_hit_rate(actual, forecast))
-            row.update(sign_strategy_performance(actual, forecast, cost_bps_per_trade))
+            row.update(sign_strategy_performance(actual, forecast, cost_bps_per_trade, bars_per_year))
         elif not is_price_target:
             row["corr_actual_forecast"] = np.corrcoef(actual, forecast)[0, 1]
         rows.append(row)
