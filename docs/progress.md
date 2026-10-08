@@ -37,6 +37,11 @@
   - [x] Amihud, Roll, Abdi–Ranaldo — 1분봉 스프레드 추정치는 2022년 이후 무의미(실제 스프레드 1틱 ≈ 0.001bp)함을 확인
   - 결과: `results/liquidity/summary.md` (9년 1분봉), `results/orderbook/summary.md` (호가창 스모크테스트)
 - [x] (10/8) 저장소 구조 정리 — 수집 코드는 `collectors/`, 분석은 `src/`, 결과는 `results/<주제>/`로 통일. 감성 파이프라인 스켈레톤(harness)은 12월에 이벤트 스터디 설계에 맞춰 새로 작성하기로 하고 삭제
+- [x] (10/9) 베이스라인 팩터 모형 (감성 제외) — `src/baseline_factors.py`, `results/baseline_factors/summary.md`
+  - 1시간 단위, 팩터 22개(HAR·반전/모멘텀·주문 불균형·비정상 거래량·시간 패턴), 워크포워드 2021~2026
+  - 유동성: 표본 외 R²(직전 값 대비) Amihud 28%, Kyle's λ 41%, 변동성 22% → **M2(선형)를 1월 '기대 유동성' 모형으로 채택**
+  - 가격: R² 음수, Clark–West 비유의, 수수료 후 샤프 크게 음수 → 예측 불가 (단기 반전 약 2bp만 존재 → 이벤트 분석 시 통제)
+  - 검증 중 바로잡은 함정 2가지: 트리 모형의 범위 밖 외삽 실패(편차 학습으로 해결), 쏠린 예측의 방향 적중률 과대평가(Pesaran–Timmermann으로 교체)
 - [x] (10/8) 로컬 WSL 실시간 수집 가동 (`deploy/install_collector.sh local`, systemd 사용자 서비스 + 2분 watchdog 타이머)
 - [ ] VPS 배포 (`deploy/install_collector.sh vps`) — GitHub 원격 저장소 연결 후
 - [ ] 9월 수집 데이터로 EDA → 로컬/VPS 실시간 데이터가 1~2주 쌓이면 `analyze_liquidity_orderbook.py` 재실행

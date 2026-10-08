@@ -3,7 +3,7 @@
 한양리더 장학 프로젝트 (2026.09 – 2027.02). 감성 신호 충격이 암호화폐 호가창 유동성에 미치는 영향을
 시장 미시구조 관점에서 실증 검증한다.
 
-현재 단계: **10월 — 미시구조 지표 구현 완료, 실시간 호가창 수집 가동 (로컬), VPS 배포 대기**
+현재 단계: **10월 — 미시구조 지표·베이스라인 팩터 모형 완료, 실시간 호가창 수집 가동 (로컬), VPS 배포 대기**
 
 ## 구조
 
@@ -20,6 +20,8 @@
 │   ├── liquidity_metrics.py           # ★ 미시구조 지표 공식 (유효 스프레드 분해, 슬리피지, OFI, Kyle's λ, VPIN, PIN …)
 │   ├── analyze_liquidity_orderbook.py # 실시간 호가창 → 정밀 지표
 │   ├── analyze_liquidity_klines.py    # Binance 1분봉 9년 → 유동성 근사 지표
+│   ├── baseline_factors.py            # ★ 베이스라인 팩터 모형 (감성 제외 유동성·가격 예측)
+│   ├── analyze_baseline_factors.py    #   워크포워드 검증 → results/baseline_factors/
 │   ├── descriptive_stats.py           # Bitstamp 10년 기초통계
 │   ├── eda_binance_1m_30d.py, eda_binance_1h.py, kline_eda.py   # Binance 1차 EDA
 │   ├── convert_binance_1m_parquet.py  # Binance 1분봉 CSV → 연도별 parquet
@@ -35,6 +37,7 @@
 │   ├── descriptive/                   # 10년 기초통계
 │   ├── eda_binance/                   # Binance 1차 EDA
 │   ├── liquidity/                     # 1분봉 유동성 지표
+│   ├── baseline_factors/              # 베이스라인 팩터 모형 (기대 유동성)
 │   └── orderbook/                     # 호가창 정밀 지표
 └── .github/workflows/ci.yml           # push 시 문법 + 데이터 무결성 검사
 ```
@@ -48,6 +51,7 @@ pip install -r requirements.txt
 python collectors/collect_bitstamp_1m.py     # Bitstamp 10년 수집 (약 12분, 있으면 skip)
 python src/descriptive_stats.py              # → results/descriptive/
 python src/analyze_liquidity_klines.py       # → results/liquidity/   (약 30초)
+python src/analyze_baseline_factors.py       # → results/baseline_factors/ (약 1.5분)
 python src/analyze_liquidity_orderbook.py --host <smoketest|local|vps>   # → results/orderbook/
 ```
 
@@ -65,4 +69,5 @@ python src/analyze_liquidity_orderbook.py --host <smoketest|local|vps>   # → r
 
 - [`results/descriptive/summary.md`](results/descriptive/summary.md) — 10년 기초통계 (두꺼운 꼬리, 미시구조 잡음, 변동성 군집, 시간대 효과)
 - [`results/liquidity/summary.md`](results/liquidity/summary.md) — 9년 유동성 지표 (Kyle's λ, Amihud, VPIN, PIN …)
+- [`results/baseline_factors/summary.md`](results/baseline_factors/summary.md) — 베이스라인 팩터 모형: 유동성은 예측 가능(표본 외 R² 22~41%), 가격은 예측 불가(수수료 후 손실)
 - [`results/orderbook/summary.md`](results/orderbook/summary.md) — 호가창 정밀 지표 (스모크테스트로 파이프라인 검증)

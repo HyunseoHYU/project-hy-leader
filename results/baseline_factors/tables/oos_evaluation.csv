@@ -1,0 +1,17 @@
+model,target,n_hours,rmse,oos_r2_vs_M0,corr_actual_forecast,dm_stat,dm_p,clark_west_stat,clark_west_p,hit_rate,hit_rate_if_independent,forecast_up_share,pesaran_timmermann_stat,pesaran_timmermann_p,gross_mean_bps_per_hour,net_mean_bps_per_hour,gross_sharpe,net_sharpe,trades_per_day
+M0_benchmark,log_amihud,50471,0.32372,0,0.850672,,,,,,,,,,,,,,
+M1_own_HAR,log_amihud,50471,0.276402,0.270975,0.884541,53.7151,0,,,,,,,,,,,,
+M2_all_linear,log_amihud,50471,0.27468,0.28003,0.886296,53.8641,0,,,,,,,,,,,,
+M3_all_boosting,log_amihud,50471,0.284646,0.226839,0.878298,23.6746,0,,,,,,,,,,,,
+M0_benchmark,kyle_lambda,50471,21.3242,0,0.413934,,,,,,,,,,,,,,
+M1_own_HAR,kyle_lambda,50471,16.4547,0.404562,0.54983,44.7394,0,,,,,,,,,,,,
+M2_all_linear,kyle_lambda,50471,16.3145,0.414669,0.560799,44.7551,0,,,,,,,,,,,,
+M3_all_boosting,kyle_lambda,50471,16.3715,0.410572,0.556302,42.9569,0,,,,,,,,,,,,
+M0_benchmark,log_rv,50471,0.380816,0,0.83477,,,,,,,,,,,,,,
+M1_own_HAR,log_rv,50471,0.341501,0.195819,0.857276,40.6689,0,,,,,,,,,,,,
+M2_all_linear,log_rv,50471,0.336864,0.217511,0.861374,45.964,0,,,,,,,,,,,,
+M3_all_boosting,log_rv,50471,0.334971,0.226279,0.863437,34.5603,0,,,,,,,,,,,,
+M0_benchmark,return_bps,50471,62.0467,0,,,,,,,,,,,,,,,
+M1_own_HAR,return_bps,50471,62.0865,-0.00128172,,,,0.760761,0.2234,0.52234,0.500727,0.569637,9.80719,0,0.276756,-6.37716,0.417479,-9.50699,15.9694
+M2_all_linear,return_bps,50471,62.1309,-0.00271591,,,,0.876685,0.190329,0.507737,0.501295,0.624027,2.98816,0.00140333,-0.168085,-5.59873,-0.25355,-8.35368,13.0335
+M3_all_boosting,return_bps,50471,62.1172,-0.00227197,,,,0.687076,0.246017,0.504686,0.502288,0.719095,1.19884,0.115295,0.135579,-3.71475,0.204516,-5.55358,9.24079
