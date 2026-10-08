@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+
+      # 1) 모든 파이썬 파일이 문법 오류 없이 컴파일되는지
+      - name: Byte-compile sources
+        run: python -m py_compile src/*.py collectors/*.py
+
+      # 2) 커밋된 1분봉 데이터가 소스별로 읽히고, 같은 시각이 중복되지 않는지
+      #    (Bitstamp와 Binance는 기간이 겹치므로 반드시 따로 검사)
+      - name: Verify committed raw data
+        run: |
+          python - <<'PY'
+          import glob
+          import pandas as pd
+
+          for source in ["bitstamp_btcusd_1m", "binance_btcusdt_1m"]:
+              files = sorted(glob.glob(f"data/raw/{source}_*.parquet"))
+              assert files, f"no files for {source}"
+              bars = pd.concat(pd.read_parquet(path, columns=["time"]) for path in files)
+              span_minutes = int((bars["time"].max() - bars["time"].min()).total_seconds() // 60) + 1
+              print(f"{source}: files={len(files)} rows={len(bars):,} span_minutes={span_minutes:,}")
+              assert bars["time"].is_unique, f"duplicate timestamps in {source}"
+          PY

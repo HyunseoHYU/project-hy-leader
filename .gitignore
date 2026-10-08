@@ -1,0 +1,27 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets
+.env
+
+# Collector temp files (atomic write in progress)
+*.parquet.tmp
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Collected order-book data (large; sync via rsync/object storage, not git)
+data/orderbook/
+
+# Raw Binance kline dump (856MB, > GitHub 100MB limit) — same data lives in data/raw/binance_btcusdt_1m_*.parquet
+data/binance/btcusdt_1m_max.csv
+
+# Collector logs
+*.log
+
+# Personal scratch notebooks (not part of this project)
+playground/
