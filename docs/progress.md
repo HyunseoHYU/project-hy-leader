@@ -49,7 +49,9 @@
   - 베이스라인 설계 개선(유동성 편차 학습·팩터 절단·가격용 정상 팩터) → 1시간 베이스라인 R²: Amihud 28→22.8%, λ 41.5→40.9%, 변동성 21.8→20.0% (더 보수적·강건한 설계로 교체, 수치 하락 투명 공개)
 - [x] (10/10) 결과 종합 요약 `docs/research_summary.md`, 파일 명단 `docs/file_index.md` 작성
 - [x] (10/8) 로컬 WSL 실시간 수집 가동 (`deploy/install_collector.sh local`, systemd 사용자 서비스 + 2분 watchdog 타이머)
-- [ ] VPS 배포 (`deploy/install_collector.sh vps`) — GitHub 원격 저장소 연결 후
+- [ ] VPS 배포 (`deploy/install_collector.sh vps`) — GitHub 연결 완료(10/8), 서버 대여 대기
+  - ⚠️ 로컬 수집 공백 확인 (10/9): 10/8 14:00 ~ 10/9 05:00 UTC 16시간 통째로 비어 있음 (노트북 절전 추정), 복구 후 자동 재개.
+    → 로컬 단독으로는 24시간 수집 불가 — VPS 배포가 최우선
 - [ ] 9월 수집 데이터로 EDA → 로컬/VPS 실시간 데이터가 1~2주 쌓이면 `analyze_liquidity_orderbook.py` 재실행
 
 ## 11월 (EDA 정리 및 중간보고)

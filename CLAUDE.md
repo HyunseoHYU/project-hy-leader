@@ -41,7 +41,7 @@ HY-Leader 장학 프로젝트 (2026.09 – 2027.02) 작업 시 Claude Code가 �
 | 계층 | 내용 | 위치 | 상태 |
 |---|---|---|---|
 | ① 과거 분봉 | Bitstamp BTC/USD 1분봉 10년, Binance BTCUSDT 1분봉 2017-08~ | `data/raw/*.parquet` | ✅ 완료 |
-| ② 실시간 호가창 | Binance bookTicker · depth20@100ms · aggTrade | `data/orderbook/` (git 제외) | 🟡 코드 완료, VPS 배포 전 |
+| ② 실시간 호가창 | Binance bookTicker · depth20@100ms · aggTrade | `data/orderbook/` (git 제외) | 🟡 로컬 WSL 수집 중 (10/8~), VPS 배포 전 |
 | ③ 감성 텍스트 | 뉴스(CryptoPanic·NewsAPI·RSS), Reddit, X | `data/crypto_news.csv` 등 | 🟡 수집기 초안 |
 
 - ①은 장기 통계적 성질(분포·변동성·계절성) 파악과 이벤트 연구의 **기준선(baseline)** 용도
@@ -91,7 +91,7 @@ HY-Leader 장학 프로젝트 (2026.09 – 2027.02) 작업 시 Claude Code가 �
 
 | 리스크 / 한계 | 개선 방안 |
 |---|---|
-| 실시간 호가창 데이터가 스모크테스트 1시간분뿐 | VPS(도쿄·싱가포르 리전, Binance는 미국 IP 차단) 즉시 배포. 데이터 누적 기간이 곧 표본 크기 |
+| 실시간 호가창 데이터가 로컬 수집분뿐 (노트북 절전 시 공백) | VPS(도쿄·싱가포르 리전, Binance는 미국 IP 차단) 즉시 배포. 데이터 누적 기간이 곧 표본 크기 |
 | 1분 수익률의 미시구조 잡음 | 실현변동성은 5분 이상 샘플링 또는 잡음 강건 추정량(two-scale RV 등) 사용 |
 | 변동성 군집·계절성이 이벤트 효과와 혼재 | 시간대·요일별 정규화(abnormal liquidity = 실제 − 같은 시간대 평균), GARCH 류 기대 변동성 대비 초과분 측정 |
 | 감성 이벤트 시각의 부정확성 (기사 발행 ≠ 시장 인지) | 수집 시각(`detected_at`)과 발행 시각 모두 기록, 둘 다로 강건성 검정 |
