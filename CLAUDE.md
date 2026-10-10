@@ -143,6 +143,23 @@ data/orderbook/  실시간 호가창 (git 제외, rsync로 동기화)
 results/<주제>/  summary.md + tables/*.csv + figures/*.png  (주제: liquidity, orderbook, baseline_factors)
 ```
 
+### 6.1 디렉토리별 가이드 (계층형 CLAUDE.md)
+
+**어떤 폴더의 파일을 읽거나 고치기 전에, 그 폴더의 `CLAUDE.md`를 먼저 읽는다.** 하위 `CLAUDE.md`는 해당 폴더 작업 시 자동 로드되며, 이 루트 문서의 규칙(§2, §5)을 *상속*하고 폴더별 규칙만 추가한다. 각 문서 상단에 상위·인접 폴더 링크가 있어 서로 이동할 수 있다.
+
+| 폴더 | 가이드 | 한 줄 요약 |
+|---|---|---|
+| `collectors/` | [collectors/CLAUDE.md](collectors/CLAUDE.md) | 호가창·분봉·감성 텍스트 수집, 무중단 설계 |
+| `impact/` | [impact/CLAUDE.md](impact/CLAUDE.md) | 트랙 1: 미시구조 지표·베이스라인·감성 영향 검정 |
+| `prediction/` | [prediction/CLAUDE.md](prediction/CLAUDE.md) | 트랙 2: MoE 국면 라우팅 예측 |
+| `deploy/` | [deploy/CLAUDE.md](deploy/CLAUDE.md) | systemd 수집기 설치 (vps / local) |
+| `docs/` | [docs/CLAUDE.md](docs/CLAUDE.md) | 문서 지도, 갱신 규칙 |
+| `data/` | [data/CLAUDE.md](data/CLAUDE.md) | 데이터 스키마·git 추적 여부·파티션 규칙 |
+| `results/` | [results/CLAUDE.md](results/CLAUDE.md) | 스크립트 출력물(직접 편집 금지) |
+| `.github/` | [.github/CLAUDE.md](.github/CLAUDE.md) | CI |
+
+폴더 구조·역할이 바뀌면 해당 폴더 `CLAUDE.md`, 이 표, `README.md`, `docs/file_index.md`를 함께 고친다.
+
 - 새 작업 결과는 `docs/progress.md`에 날짜와 함께 기록 (장학금 중간/결과 보고서 근거)
 - 크레덴셜은 `.env`(git 제외), 키 목록은 `.env.example`
 - 탐색 단계 산출물(descriptive, eda_binance, horizons)은 `archive/pre-restructure` 브랜치에 보존 — main에는 두 트랙의 최종 구조만 둔다

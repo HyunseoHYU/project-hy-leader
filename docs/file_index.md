@@ -1,6 +1,7 @@
 # 폴더 · 파일 명단
 
 두 트랙(impact / prediction) 구조 기준. 탐색 단계 파일(EDA·기초통계·horizons)은 `archive/pre-restructure` 브랜치 참고.
+각 폴더의 상세 규칙은 그 폴더의 `CLAUDE.md` 참고 (지도: 루트 `CLAUDE.md` §6.1).
 git에 올라가지 않는 것: `.env`, `data/orderbook/`, `data/binance/btcusdt_1m_max.csv`, `prediction/outputs/`, 로그.
 
 ```

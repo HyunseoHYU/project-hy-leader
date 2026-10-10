@@ -16,6 +16,7 @@
 
 ## 10월 (미시구조 이론·알고리즘 테스트)
 
+- [x] (10/10) 폴더별 `CLAUDE.md` 계층 문서 추가 (collectors·impact·prediction·deploy·docs·data·results·.github) + 루트 `CLAUDE.md` §6.1 지도, `README.md` 구조 갱신
 - [x] (10/5) BTC/USD 1분봉 10년 수집 — Bitstamp, 2016-10-01 ~ 2026-09-30 UTC, 5,258,880행, 누락 0분
   (`collectors/collect_bitstamp_1m.py` → `data/raw/bitstamp_btcusd_1m_{YYYY}.parquet`)
 - [x] (10/5) 10년 1분봉 기초통계량 (`src/descriptive_stats.py` → `results/descriptive/summary.md`, 표 11개·그림 8개)
