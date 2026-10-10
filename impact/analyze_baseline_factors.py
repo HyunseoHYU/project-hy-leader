@@ -141,7 +141,7 @@ def plot_strategy_equity(forecasts: pd.DataFrame) -> None:
 # ===========================================================================
 def write_summary(evaluation: pd.DataFrame, yearly_price: pd.DataFrame, coefficients: dict[str, pd.DataFrame],
                   table: pd.DataFrame, forecasts_price: pd.DataFrame) -> None:
-    from descriptive_stats import to_markdown_table
+    from table_format import to_markdown_table
 
     def view(target, columns):
         rows = evaluation[evaluation["target"] == target]

@@ -1,5 +1,7 @@
 # HY-Leader 연구 결과 요약
 
+> **참고 (10/10 구조 개편)**: 이 문서가 인용하는 `results/descriptive/`, `results/horizons/`, `results/eda_binance/`와 해당 스크립트(`descriptive_stats.py`, `analyze_horizons.py`, `technical_indicators.py`, `eda_*.py`)는 `archive/pre-restructure` 브랜치에 보존되어 있다.
+
 > **감성지수 충격은 암호화폐 호가창 유동성에 통계적으로 유의한 영향을 미치는가?**
 > 이 문서는 감성 데이터를 붙이기 전, **"감성 없이도 무엇이 설명되는가"**를 정리한 중간 결과다 (2026-10 기준).
 

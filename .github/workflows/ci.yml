@@ -18,7 +18,11 @@ jobs:
 
       # 1) 모든 파이썬 파일이 문법 오류 없이 컴파일되는지
       - name: Byte-compile sources
-        run: python -m py_compile src/*.py collectors/*.py
+        run: python -m py_compile impact/*.py prediction/*.py prediction/moe_regime/*.py collectors/*.py
+
+      # 1-b) 예측 트랙 단위 테스트 (피처 인과성, 라벨, 라우터)
+      - name: Run prediction tests
+        run: python -m pytest prediction
 
       # 2) 커밋된 1분봉 데이터가 소스별로 읽히고, 같은 시각이 중복되지 않는지
       #    (Bitstamp와 Binance는 기간이 겹치므로 반드시 따로 검사)

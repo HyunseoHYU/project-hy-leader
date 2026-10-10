@@ -69,6 +69,7 @@
 - [ ] 감성지수 NLP 모델 파인튜닝
 - [ ] LLM 교차검증
 - [ ] 기존 파이프라인과 병합
+- [x] (10/10) 저장소를 **impact**(감성→유동성 영향력)·**prediction**(MoE 예측) 두 트랙으로 개편. `Impact_of_Sentiment_on_CryptoMarket`의 MoE 파이프라인을 `prediction/`로 병합, 탐색 단계 산출물(EDA·기초통계·horizons)은 `archive/pre-restructure` 브랜치로 보존
 
 ## 1월 (감성지수 호가창 영향 분석 — 핵심 과제)
 

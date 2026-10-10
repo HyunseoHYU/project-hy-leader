@@ -80,7 +80,7 @@ rsync -avz <user>@<vps-ip>:~/HY_LEADER/data/orderbook/ ~/HY_LEADER/data/orderboo
 ## 6. 배포 후 한 번은 확인할 것
 
 1. 15~20분 뒤 생존신호가 계속 갱신되고 Parquet 파일이 쌓이는지
-2. `python src/analyze_liquidity_orderbook.py --host vps` 가 돌아가는지 (스키마 점검 겸 10월 지표 계산)
+2. `python impact/analyze_liquidity_orderbook.py --host vps` 가 돌아가는지 (스키마 점검 겸 10월 지표 계산)
 3. 강제 단절 (방화벽으로 Binance 아웃바운드 잠깐 차단) → 재연결 로그가 뜨는지
 4. 조용한 정지 흉내 (`kill -STOP <pid>`) → 2분 안에 watchdog이 재시작하는지
 5. VPS·로컬이 겹치는 구간에서 `verify_orderbook_coverage.py` 로 두 호스트 모두 공백 없는지

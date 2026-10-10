@@ -13,3 +13,7 @@ websocket-client==1.9.2
 python-dotenv==1.2.3
 praw==8.0.3
 feedparser==6.0.14
+
+# prediction track (MoE)
+PyYAML==6.0.1
+pytest==9.1.1

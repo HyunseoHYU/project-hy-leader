@@ -50,7 +50,7 @@ HY-Leader 장학 프로젝트 (2026.09 – 2027.02) 작업 시 Claude Code가 �
 
 ### 2.2 설계 원칙
 1. **무중단 수집** — 연결 유실·재연결은 코드 레벨에서 처리. VPS·로컬 두 인스턴스가 *독립 프로세스*로 각자 수집 (미러링이 아님), `host=` 파티션으로 구분 후 병합
-2. **재현성** — 모든 결과는 `src/` 스크립트 한 번 실행으로 재생성. 패키지 버전 고정(`requirements.txt`), 수집 기간은 코드 상수/인자로 명시
+2. **재현성** — 모든 결과는 `impact/`·`prediction/` 스크립트 한 번 실행으로 재생성. 패키지 버전 고정(`requirements.txt`), 수집 기간은 코드 상수/인자로 명시
 3. **시간 정합** — 모든 시각은 UTC. 캔들의 `time`은 *시작 시각*
 4. **저장 형식** — 연도(또는 날짜·시간)별 Parquet(zstd). GitHub 파일당 100MB 제한 → 대용량 원본 CSV·호가창 데이터는 git 제외
 5. **귀무가설 프레이밍** — "효과 없음"도 정식 결과. 결과를 보고 가설을 바꾸지 않도록 분석 계획을 먼저 고정
@@ -130,18 +130,22 @@ collectors/   데이터 수집 (실행 위치: 프로젝트 루트 또는 collec
               - 실시간 호가창: collect_orderbook_ws.py + watchdog + verify_orderbook_coverage.py
               - 과거 1분봉: collect_bitstamp_1m.py, collect_binance_1m.py, collect_binance_1h.py
               - 감성 텍스트: collect_crypto_news.py, collect_reddit_posts.py, collect_x_posts.py
-src/          분석 (모두 `python src/<파일>.py` 로 실행, 결과는 results/<주제>/ 에 저장)
+impact/       트랙 1 — 감성 → 유동성·시장구조 영향력 (`python impact/<파일>.py`, 결과는 results/<주제>/)
               - liquidity_metrics.py  미시구조 지표 공식 모음 (새 지표는 여기에 추가)
-              - plot_style.py         공통 차트 스타일
+              - baseline_factors.py   감성 제외 베이스라인(기대 유동성)
+              - plot_style.py, table_format.py  공통 차트·표 서식
+prediction/   트랙 2 — 예측 모델 (MoE 국면 라우팅: moe_regime/, run_pipeline.py, configs/, tests/)
+              실행: `python prediction/run_pipeline.py`, 테스트: `python -m pytest prediction`
 deploy/       install_collector.sh [vps|local] — systemd 서비스 + watchdog 타이머 설치
 docs/         research_summary.md (결과 요약), file_index.md (파일 명단), progress.md (월별 경과), deployment.md (배포 절차)
 data/raw/     연도별 Parquet (git 추적)
 data/orderbook/  실시간 호가창 (git 제외, rsync로 동기화)
-results/<주제>/  summary.md + tables/*.csv + figures/*.png  (주제: descriptive, eda_binance, liquidity, orderbook, baseline_factors, horizons)
+results/<주제>/  summary.md + tables/*.csv + figures/*.png  (주제: liquidity, orderbook, baseline_factors)
 ```
 
 - 새 작업 결과는 `docs/progress.md`에 날짜와 함께 기록 (장학금 중간/결과 보고서 근거)
 - 크레덴셜은 `.env`(git 제외), 키 목록은 `.env.example`
+- 탐색 단계 산출물(descriptive, eda_binance, horizons)은 `archive/pre-restructure` 브랜치에 보존 — main에는 두 트랙의 최종 구조만 둔다
 - 이 프로젝트와 무관한 다른 트랙(KOSPI 등) 작업은 이 저장소에 두지 않는다
 
 ## 7. 일정

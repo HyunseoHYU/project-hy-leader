@@ -27,6 +27,8 @@ def test_router_topk_and_simplex():
 
 def test_pipeline_beats_chance():
     import yaml
-    cfg = yaml.safe_load(open("configs/default.yaml")); cfg["out_dir"] = None
+    from pathlib import Path
+    config_path = Path(__file__).resolve().parents[1] / "configs" / "default.yaml"  # 실행 위치와 무관하게
+    cfg = yaml.safe_load(open(config_path)); cfg["out_dir"] = None
     accs = [run({**cfg, "seed": s})["router_acc"] for s in range(4)]
     assert np.mean(accs) > 0.42  # 3 classes -> chance ~0.33

@@ -206,7 +206,7 @@ def plot_price_impact_scatter(intervals: pd.DataFrame, regressions: pd.DataFrame
 # ===========================================================================
 def write_summary(host: str, quotes: pd.DataFrame, trades: pd.DataFrame, spread_summary: pd.DataFrame,
                   decomposition: pd.DataFrame, slippage: pd.DataFrame, regressions: pd.DataFrame) -> None:
-    from descriptive_stats import to_markdown_table
+    from table_format import to_markdown_table
 
     start_time = quotes["event_time"].min()
     end_time = quotes["event_time"].max()

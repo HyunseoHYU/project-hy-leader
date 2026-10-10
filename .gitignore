@@ -25,3 +25,6 @@ data/binance/btcusdt_1m_max.csv
 
 # Personal scratch notebooks (not part of this project)
 playground/
+
+# Prediction track outputs
+outputs/

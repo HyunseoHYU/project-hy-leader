@@ -243,7 +243,7 @@ def plot_lambda_vs_volatility(daily: pd.DataFrame) -> None:
 # ===========================================================================
 def write_summary(daily: pd.DataFrame, yearly: pd.DataFrame, pin_table: pd.DataFrame,
                   hourly: pd.DataFrame, correlation: pd.DataFrame) -> None:
-    from descriptive_stats import to_markdown_table  # 같은 숫자 서식 재사용
+    from table_format import to_markdown_table  # 같은 숫자 서식 재사용
 
     pin_view = pin_table[["pin", "alpha", "delta", "boundary_flag"]].copy()
     pin_view["pin"] = pin_view["pin"].astype(float)

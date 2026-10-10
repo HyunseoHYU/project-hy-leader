@@ -2,7 +2,7 @@
 공통 차트 스타일 & 저장 도우미
 ============================
 
-모든 분석 스크립트(descriptive_stats.py, eda_*.py, liquidity_*.py)가 같은 색·서식을
+모든 분석 스크립트(analyze_*.py)가 같은 색·서식을
 쓰도록 한곳에 모아 둔 모듈. import 하는 순간 matplotlib 기본 설정(rcParams)이 적용된다.
 
 사용 예:
