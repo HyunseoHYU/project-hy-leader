@@ -1,0 +1,8 @@
+csv: null            # null -> synthetic regime-switching data
+n: 3000
+seed: 0
+train_frac: 0.7
+out_dir: outputs
+label: {horizon: 30, k: 0.4, vol_window: 30}
+router: {hidden: 4, lr: 0.05, epochs: 150, l2: 0.03, temperature: 1.0, top_k: 0}
+expert_alpha: 10.0
