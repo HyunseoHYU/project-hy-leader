@@ -1,6 +1,7 @@
 # CLAUDE.md
 
-- 진행 상황은 `docs/progress.md`, 배포 절차는 `docs/deployment.md`, 결과는 `results/*/summary.md` 참고
+## 참조
+진행 상황은 `docs/progress.md`, 배포 절차는 `docs/deployment.md`, 결과는 `results/*/summary.md` 참고
 
 ---
 
