@@ -59,6 +59,8 @@ python collectors/collect_bitstamp_1m.py                  # Bitstamp 10년 수�
 python impact/analyze_liquidity_klines.py                 # → results/liquidity/   (약 30초)
 python impact/analyze_baseline_factors.py                 # → results/baseline_factors/ (약 1.5분)
 python impact/analyze_liquidity_orderbook.py --host <smoketest|local|vps>   # → results/orderbook/
+python collectors/collect_binance_aggtrades.py            # 과거 체결 3년 → data/aggtrades/ (12GB, 약 30분)
+python impact/analyze_aggtrades_backtest.py               # → results/aggtrades_backtest/ (약 3.5분)
 
 # prediction 트랙
 python prediction/run_pipeline.py [--config PATH] [--csv date,close[,volume,sentiment].csv]
@@ -79,6 +81,7 @@ python -m pytest prediction                               # 인과성·라벨 �
 
 - [`results/liquidity/summary.md`](results/liquidity/summary.md) — 9년 유동성 지표 (Kyle's λ, Amihud, VPIN, PIN …)
 - [`results/baseline_factors/summary.md`](results/baseline_factors/summary.md) — 유동성은 예측 가능(표본 외 R² 20~41%), 가격은 예측 불가(수수료 후 손실)
+- [`results/aggtrades_backtest/summary.md`](results/aggtrades_backtest/summary.md) — 체결 3년 주문흐름 백테스트 (유의한 미세 예측력, 수수료 후 손실)
 - [`results/orderbook/summary.md`](results/orderbook/summary.md) — 호가창 정밀 지표 (스모크테스트로 파이프라인 검증)
 - [`docs/research_summary.md`](docs/research_summary.md) — 탐색 단계 결과 종합 (기초통계·시간 단위별 분석 포함, 해당 산출물은 archive 브랜치)
 

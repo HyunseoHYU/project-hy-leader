@@ -12,6 +12,8 @@
 |---|---|---|
 | `liquidity_metrics.py` | ★ 미시구조 지표 공식 모음 (유효 스프레드 분해, 슬리피지, OFI, Kyle's λ, Amihud, Roll, Abdi–Ranaldo, VPIN, PIN). **새 지표는 여기에 추가** | — |
 | `baseline_factors.py` | ★ 감성 제외 베이스라인. 비정상 유동성 = 실제 − 기대 유동성 | — |
+| `trade_flow_backtest.py` | 체결 기반 주문흐름 백테스트 계산 (봉 집계, 워크포워드 릿지, CW·PT 검정, 전략 손익, 플라시보) | — |
+| `analyze_aggtrades_backtest.py` | aggTrades 3년 백테스트 실행 | `results/aggtrades_backtest/` |
 | `analyze_liquidity_orderbook.py` | 실시간 호가창 → 정밀 지표 (`--host <smoketest\|local\|vps>`) | `results/orderbook/` |
 | `analyze_liquidity_klines.py` | 1분봉 → 유동성 근사 지표(장기 기준선) | `results/liquidity/` |
 | `analyze_baseline_factors.py` | 워크포워드 검증 | `results/baseline_factors/` |

@@ -15,6 +15,7 @@
 | `orderbook_common.py` | 호가창 수집기 공통 부품 (경로 규칙, Parquet 버퍼, 백오프, heartbeat) | — |
 | `common.py` | CSV 수집기 공통 (`.env` 로드, `DATA_DIR`) | — |
 | `collect_bitstamp_1m.py` | Bitstamp BTC/USD 1분봉 10년 (이어받기 지원) | `data/raw/bitstamp_btcusd_1m_{YYYY}.parquet` |
+| `collect_binance_aggtrades.py` | Binance 현물 BTCUSDT 체결(aggTrades) 과거 일별 파일 (data.binance.vision, 이어받기, ms/µs 시각 자동 통일) | `data/aggtrades/binance_btcusdt_aggtrades_{YYYY-MM-DD}.parquet` (git 제외) |
 | `collect_binance_1m.py`, `collect_binance_1h.py` | Binance BTCUSDT 1분봉·1시간봉 REST | `data/binance/*.csv` (git 제외) |
 | `collect_crypto_news.py`, `collect_reddit_posts.py`, `collect_x_posts.py` | 감성 텍스트 (뉴스·Reddit·X) | `data/*.csv` |
 

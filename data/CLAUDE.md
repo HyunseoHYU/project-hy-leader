@@ -8,6 +8,7 @@
 | `raw/bitstamp_btcusd_1m_{YYYY}.parquet` | BTC/USD 1분봉 2016-10~. 컬럼 `time, open, high, low, close, volume` | 추적 |
 | `raw/binance_btcusdt_1m_{YYYY}.parquet` | BTCUSDT 1분봉 2017-08~. 위 컬럼 + `close_time, quote_asset_volume, num_trades, taker_buy_base_volume, taker_buy_quote_volume` | 추적 |
 | `orderbook/{bookticker,depth20,trades}/host=<H>/date=/hour=/*.parquet` | 실시간 호가창. `event_time`, 최우선 호가·잔량 / 상위 10단계 / 체결(`is_buyer_maker`) | **제외** |
+| `aggtrades/binance_btcusdt_aggtrades_{YYYY-MM-DD}.parquet` | 과거 체결 2023-10-11~2026-10-10 (12GB). `agg_trade_id, price, quantity, first/last_trade_id, trade_time, is_buyer_maker, is_best_match`. `_minute_bars.parquet`은 1분 요약 캐시 | **제외** |
 | `orderbook/HEARTBEAT_<host>.json` | 수집기 생존신호 | 제외 |
 | `binance/btcusdt_1m_max.csv` | Binance 1분봉 원본 CSV (856MB) | 제외 |
 | `crypto_news.csv` (+ `reddit_*`, `x_*`) | 감성 텍스트 | 추적 |

@@ -7,6 +7,7 @@
 |---|---|---|---|
 | `liquidity/` | 9년 1분봉 유동성 근사 지표 (Kyle's λ, Amihud, Roll, VPIN, PIN) | `impact/analyze_liquidity_klines.py` | [summary](liquidity/summary.md) |
 | `baseline_factors/` | 감성 제외 베이스라인 — 유동성은 예측 가능, 가격은 불가 | `impact/analyze_baseline_factors.py` | [summary](baseline_factors/summary.md) |
+| `aggtrades_backtest/` | 체결 3년 기반 주문흐름 백테스트 (예측력·수수료 후 성과·플라시보) | `impact/analyze_aggtrades_backtest.py` | [summary](aggtrades_backtest/summary.md) |
 | `orderbook/` | 실시간 호가창 정밀 지표 (현재 스모크테스트로 파이프라인 검증) | `impact/analyze_liquidity_orderbook.py` | [summary](orderbook/summary.md) |
 
 (옛 `descriptive`, `eda_binance`, `horizons` 결과는 `archive/pre-restructure` 브랜치)
