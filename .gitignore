@@ -28,3 +28,6 @@ playground/
 
 # Prediction track outputs
 outputs/
+
+# Historical aggTrades (large; regenerate with collectors/collect_binance_aggtrades.py)
+data/aggtrades/

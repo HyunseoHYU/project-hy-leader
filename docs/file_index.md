@@ -1,7 +1,8 @@
 # 폴더 · 파일 명단
 
 두 트랙(impact / prediction) 구조 기준. 탐색 단계 파일(EDA·기초통계·horizons)은 `archive/pre-restructure` 브랜치 참고.
-git에 올라가지 않는 것: `.env`, `data/orderbook/`, `data/binance/btcusdt_1m_max.csv`, `prediction/outputs/`, 로그.
+각 폴더의 상세 규칙은 그 폴더의 `CLAUDE.md` 참고 (지도: 루트 `CLAUDE.md` §6.1).
+git에 올라가지 않는 것: `.env`, `data/orderbook/`, `data/aggtrades/`, `data/binance/btcusdt_1m_max.csv`, `prediction/outputs/`, 로그.
 
 ```
 HY_LEADER/
@@ -13,7 +14,7 @@ HY_LEADER/
 ├── deploy/       실시간 수집기 설치 (install_collector.sh)
 ├── docs/         research_summary, file_index, progress, deployment
 ├── data/         raw/ (연도별 parquet), orderbook/, crypto_news.csv
-└── results/      liquidity/, baseline_factors/, orderbook/
+└── results/      liquidity/, baseline_factors/, orderbook/, aggtrades_backtest/
 ```
 
 ## `collectors/`
@@ -23,6 +24,7 @@ HY_LEADER/
 | `watchdog_orderbook.py` | 조용한 정지 감지 시 재시작 |
 | `verify_orderbook_coverage.py` | 수집 공백 점검 |
 | `orderbook_common.py`, `common.py` | 수집기 공통 부품 |
+| `collect_binance_aggtrades.py` | 과거 체결(aggTrades) 일별 파일 → `data/aggtrades/` |
 | `collect_bitstamp_1m.py`, `collect_binance_1m.py`, `collect_binance_1h.py` | 과거 분봉 |
 | `collect_crypto_news.py`, `collect_reddit_posts.py`, `collect_x_posts.py` | 감성 텍스트 |
 
@@ -31,6 +33,8 @@ HY_LEADER/
 |---|---|---|
 | `liquidity_metrics.py` | ★ 미시구조 지표 공식 | — |
 | `baseline_factors.py` | ★ 감성 제외 베이스라인 (기대 유동성) | — |
+| `trade_flow_backtest.py` | 체결 기반 주문흐름 백테스트 계산 | — |
+| `analyze_aggtrades_backtest.py` | aggTrades 3년 백테스트 실행 | `results/aggtrades_backtest/` |
 | `analyze_liquidity_orderbook.py` | 실시간 호가창 정밀 지표 | `results/orderbook/` |
 | `analyze_liquidity_klines.py` | 1분봉 유동성 근사 지표 | `results/liquidity/` |
 | `analyze_baseline_factors.py` | 워크포워드 검증 | `results/baseline_factors/` |

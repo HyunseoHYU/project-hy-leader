@@ -16,6 +16,12 @@
 
 ## 10월 (미시구조 이론·알고리즘 테스트)
 
+- [x] (10/11) **aggTrades 3년 수집 + 전체 기간 주문흐름 백테스트** — `collectors/collect_binance_aggtrades.py`, `impact/trade_flow_backtest.py`, `impact/analyze_aggtrades_backtest.py` → `results/aggtrades_backtest/`
+  - 데이터: Binance 현물 BTCUSDT 체결 1,365,393,853건, 2023-10-11 ~ 2026-10-10 (1,096일, 12GB, 빈 분 0). 과거 호가창은 공개 불가라 체결만 사용 (선물 bookTicker는 2023-05~2024-03만 존재)
+  - 검증: 워크포워드(첫 12개월 학습, 분기 재학습), 표본 외 2024-10-11 ~ 2026-10-10. 1·5·15·60분 봉 × 릿지 모형 2종 + 규칙 신호 2종, 비용 0·1·10bp, 플라시보 2,000회
+  - 결과: 주문흐름은 **통계적으로 유의한 미세 예측력**(표본 외 R² 0.004~0.009%, 1분 비용 전 샤프 5.87)이 있으나 손익분기 수수료가 0.05~0.7bp라 **편도 1bp에서도 모든 전략 손실** → 수수료 후 거래 불가. 감성 없는 체결 기반 기준선 확정
+  - 주문흐름 부호가 1분(추종)에서 5분 이상(역추세)으로 뒤집힘 — 1월 이벤트 분석에서 봉 크기별로 방향이 다를 수 있다는 사전 정보
+- [x] (10/10) 폴더별 `CLAUDE.md` 계층 문서 추가 (collectors·impact·prediction·deploy·docs·data·results·.github) + 루트 `CLAUDE.md` §6.1 지도, `README.md` 구조 갱신
 - [x] (10/5) BTC/USD 1분봉 10년 수집 — Bitstamp, 2016-10-01 ~ 2026-09-30 UTC, 5,258,880행, 누락 0분
   (`collectors/collect_bitstamp_1m.py` → `data/raw/bitstamp_btcusd_1m_{YYYY}.parquet`)
 - [x] (10/5) 10년 1분봉 기초통계량 (`src/descriptive_stats.py` → `results/descriptive/summary.md`, 표 11개·그림 8개)
