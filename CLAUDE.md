@@ -1,8 +1,5 @@
 # CLAUDE.md
 
-HY-Leader 장학 프로젝트 (2026.09 – 2027.02) 작업 시 Claude Code가 따라야 할 프로젝트 맥락과 규칙.
-
-- 신청자: 유현서 (한양대 경제금융학부) / 지도교수: 이알버트 교수 (*Buy-sell imbalances on and around round numbers in cryptocurrencies*)
 - 진행 상황은 `docs/progress.md`, 배포 절차는 `docs/deployment.md`, 결과는 `results/*/summary.md` 참고
 
 ---
